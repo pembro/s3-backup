@@ -8,6 +8,12 @@ from typing import List
 
 
 class SsbBucketFolder:
+    """
+    Areas of concern:
+    - tracking folder vs S3 bucket
+    - connecting to bucket
+    - holds sync configuration
+    """
     bucketTarget: str
     bucketFolder: str
     sourceFolder: pathlib.Path
@@ -100,6 +106,10 @@ class SsbConfig:
     This class finds if we are running in a directory that is configured
     for syncing with S3. The config file could be either in the current
     directory or one of the parent directories (similar to a git repo).
+
+    Areas of concern:
+    - find and read configuration
+    - hold configured bucket folders
 
     """
     sync_folders: List[SsbBucketFolder]
