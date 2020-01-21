@@ -1,4 +1,5 @@
 __pycache__/
+.venv/
 
 # PyCharm files
 .idea/workspace.xml
