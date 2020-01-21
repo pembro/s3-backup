@@ -8,39 +8,39 @@ from typing import List
 
 
 class SsbBucketFolder:
-    bucketTarget: str
-    bucketFolder: str
-    sourceFolder: pathlib.Path
+    bucket_target: str
+    bucket_folder: str
+    source_folder: pathlib.Path
     deletes: bool
     __s3: Client = boto3.client('s3')
 
     def __init__(self, d: configparser.ConfigParser, config_path: pathlib.Path):
-        self.bucketTarget = d.get('bucket-target')
-        self.bucketFolder = d.get('bucket-folder', fallback='')
-        if self.bucketFolder != '':
-            self.bucketFolder += '/'
-        self.sourceFolder = config_path / pathlib.Path(d.get('source'))
-        self.sourceFolder.resolve()
+        self.bucket_target = d.get('bucket-target')
+        self.bucket_folder = d.get('bucket-folder', fallback='')
+        if self.bucket_folder != '':
+            self.bucket_folder += '/'
+        self.source_folder = config_path / pathlib.Path(d.get('source'))
+        self.source_folder.resolve()
         self.deletes = d.getboolean('sync-deletes')
         self.__s3 = boto3.client('s3')
         logging.debug('Created a new bucket (bucketTarget=%s, bucketFolder=%s, sourceFolder=%s ,deletes=%s',
-                      self.bucketTarget, self.bucketTarget, self.sourceFolder, (self.deletes))
+                      self.bucket_target, self.bucket_target, self.source_folder, (self.deletes))
 
     def update_object_in_s3(self, local_path: str):
         key_to_update = self.build_bucket_key(local_path)
-        local_file = self.sourceFolder / local_path
+        local_file = self.source_folder / local_path
         local_file = str(local_file.resolve())
         logging.info(f'Uploading [%s] to bucket key [%s]', local_file, key_to_update)
-        ret = self.__s3.upload_file(local_file, self.bucketTarget, key_to_update)
+        ret = self.__s3.upload_file(local_file, self.bucket_target, key_to_update)
         return ret
 
     def delete_object_in_s3(self, local_path: str):
         key_to_delete = self.build_bucket_key(local_path)
         logging.info(f'Deleting bucket object [%s]', key_to_delete)
-        self.__s3.delete_object(Bucket=self.bucketTarget, Key=key_to_delete)
+        self.__s3.delete_object(Bucket=self.bucket_target, Key=key_to_delete)
 
     def build_bucket_key(self, local_name: str):
-        return self.bucketFolder + local_name
+        return self.bucket_folder + local_name
 
     def sync_folder(self):
         local_objects = self.get_local_objects()
@@ -67,10 +67,10 @@ class SsbBucketFolder:
                     self.update_object_in_s3(local_key)
 
     def get_local_objects(self) -> dict:
-        str_source = self.sourceFolder.as_posix()
+        str_source = self.source_folder.as_posix()
         source_files = {}
 
-        for source_file in self.sourceFolder.rglob("*"):
+        for source_file in self.source_folder.rglob("*"):
             if source_file.is_dir():
                 continue
             str_source_file = source_file.as_posix()
@@ -83,8 +83,8 @@ class SsbBucketFolder:
 
     def get_bucket_objects(self) -> dict:
         try:
-            bucket_resp = self.__s3.list_objects_v2(Bucket=self.bucketTarget, Prefix=self.bucketFolder)
-            bucket_contents = {x['Key'].replace(f'{self.bucketFolder}', ''):
+            bucket_resp = self.__s3.list_objects_v2(Bucket=self.bucket_target, Prefix=self.bucket_folder)
+            bucket_contents = {x['Key'].replace(f'{self.bucket_folder}', ''):
                                    {'mtime': x['LastModified'].replace(tzinfo=None), 'size': x['Size']}
                                for x in bucket_resp['Contents']}
             logging.info('Received bucket contents')
